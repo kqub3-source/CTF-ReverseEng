@@ -1,0 +1,133 @@
+First I open the crackme in Olly, and we start in with no breakpoint, just to see what to expect.
+
+I see Name: and Serial:    Ok enter something in that.
+
+Me it was skynet and 123456. Tips: always use the samething, if you can. Sometimes its take up to 8 char.  For the serial I use 123456 witch is 1E240 in Hex.  Why?  Because when I see 1E240 I know that a serial compare is or will take place soon... 
+
+Ok. Now lets restart the crackme in Olly.  Debug\Restart.  From the Program entry point, we look down a little bit and we see :
+
+004013FE   . C74424 04 0000>MOV DWORD PTR SS:[ESP+4],CrackMe#.00440000      ;  ASCII "Name:"
+00401406   . C70424 C033440>MOV DWORD PTR SS:[ESP],CrackMe#.004433C0
+0040140D   . C745 A0 010000>MOV DWORD PTR SS:[EBP-60],1
+00401414   . E8 DFAD0300    CALL CrackMe#.0043C1F8
+00401419   . C74424 04 C8AF>MOV DWORD PTR SS:[ESP+4],CrackMe#.0043AFC8
+00401421   . 890424         MOV DWORD PTR SS:[ESP],EAX
+00401424   . E8 278D0200    CALL CrackMe#.0042A150
+00401429   . 8D45 D8        LEA EAX,DWORD PTR SS:[EBP-28]
+0040142C   . 894424 04      MOV DWORD PTR SS:[ESP+4],EAX
+00401430   . C70424 6034440>MOV DWORD PTR SS:[ESP],CrackMe#.00443460
+00401437   . E8 3CC10300    CALL CrackMe#.0043D578
+0040143C   . 8D45 D8        LEA EAX,DWORD PTR SS:[EBP-28]
+0040143F   . 890424         MOV DWORD PTR SS:[ESP],EAX
+
+
+A little more down we can see :
+
+00401454   . C74424 04 0600>MOV DWORD PTR SS:[ESP+4],CrackMe#.00440006      ;  ASCII "Serial:"
+0040145C   . C70424 C033440>MOV DWORD PTR SS:[ESP],CrackMe#.004433C0
+00401463   . E8 90AD0300    CALL CrackMe#.0043C1F8
+00401468   . C74424 04 C8AF>MOV DWORD PTR SS:[ESP+4],CrackMe#.0043AFC8
+00401470   . 890424         MOV DWORD PTR SS:[ESP],EAX
+00401473   . E8 D88C0200    CALL CrackMe#.0042A150
+00401478   . 8D45 D4        LEA EAX,DWORD PTR SS:[EBP-2C]
+0040147B   . 894424 04      MOV DWORD PTR SS:[ESP+4],EAX
+0040147F   . C70424 6034440>MOV DWORD PTR SS:[ESP],CrackMe#.00443460
+00401486   . E8 356E0200    CALL CrackMe#.004282C0
+0040148B   . 8B45 D4        MOV EAX,DWORD PTR SS:[EBP-2C]
+0040148E   . 3B45 D0        CMP EAX,DWORD PTR SS:[EBP-30]
+00401491   . 74 24          JE SHORT CrackMe#.004014B7
+00401493   . C74424 04 0E00>MOV DWORD PTR SS:[ESP+4],CrackMe#.0044000E      ;  ASCII "False Serial."
+0040149B   . C70424 C033440>MOV DWORD PTR SS:[ESP],CrackMe#.004433C0
+004014A2   . E8 51AD0300    CALL CrackMe#.0043C1F8
+004014A7   . C74424 04 C8AF>MOV DWORD PTR SS:[ESP+4],CrackMe#.0043AFC8
+004014AF   . 890424         MOV DWORD PTR SS:[ESP],EAX
+004014B2   . E8 998C0200    CALL CrackMe#.0042A150
+004014B7   > 8B45 D4        MOV EAX,DWORD PTR SS:[EBP-2C]
+004014BA   . 3B45 D0        CMP EAX,DWORD PTR SS:[EBP-30]
+004014BD   . 75 4B          JNZ SHORT CrackMe#.0040150A
+004014BF   . C74424 04 1C00>MOV DWORD PTR SS:[ESP+4],CrackMe#.0044001C      ;  ASCII "Right Serial."
+004014C7   . C70424 C033440>MOV DWORD PTR SS:[ESP],CrackMe#.004433C0
+004014CE   . C745 A0 010000>MOV DWORD PTR SS:[EBP-60],1
+004014D5   . E8 1EAD0300    CALL CrackMe#.0043C1F8
+004014DA   . C74424 04 C8AF>MOV DWORD PTR SS:[ESP+4],CrackMe#.0043AFC8
+004014E2   . 890424         MOV DWORD PTR SS:[ESP],EAX
+004014E5   . E8 668C0200    CALL CrackMe#.0042A150
+004014EA   . C74424 04 2A00>MOV DWORD PTR SS:[ESP+4],CrackMe#.0044002A      ;  ASCII "Now make a KeyGen"
+004014F2   . 890424         MOV DWORD PTR SS:[ESP],EAX
+004014F5   . E8 FEAC0300    CALL CrackMe#.0043C1F8
+
+
+When I do a keygen I search for the Bad guys message, since very often the compare is right above... Lets see if this is the case here...
+
+0040148B   . 8B45 D4        MOV EAX,DWORD PTR SS:[EBP-2C]		    ; mov to eax your typed serial
+0040148E   . 3B45 D0        CMP EAX,DWORD PTR SS:[EBP-30] 		    ; If you look at EBP-30, you will see 									    ; the good serial
+00401491   . 74 24          JE SHORT CrackMe#.004014B7			    ; jump if equals (good boys)
+00401493   . C74424 04 0E00>MOV DWORD PTR SS:[ESP+4],CrackMe#.0044000E      ;  ASCII "False Serial."
+
+
+Take the address at EBP-30. With that we know one things, the serial gets computed before that line... So what I do is I breakpoint function call before that line (F2), and I check at the address EBP-30 that I have noted, not sure but this could be different for you, mine was (0022FF48). So I do a breakpoint at <00401486>.  But the serial was already computed... I dont have find something interresting till there :
+
+00401442   . E8 090E0100    CALL CrackMe#.00412250
+00401447   . 05 CA000000    ADD EAX,0CA
+0040144C   . 35 0FD4D803    XOR EAX,3D8D40F
+00401451   . 8945 D0        MOV DWORD PTR SS:[EBP-30],EAX
+00401454   . C74424 04 0600>MOV DWORD PTR SS:[ESP+4],CrackMe#.00440006      ;  ASCII "Serial:"
+
+So I have made a breakpoint at <00401442> : to find that :
+
+00412250  /$ 55             PUSH EBP
+00412251  |. 89E5           MOV EBP,ESP
+00412253  |. 8B45 08        MOV EAX,DWORD PTR SS:[EBP+8]
+00412256  |. 5D             POP EBP
+00412257  |. 8B00           MOV EAX,DWORD PTR DS:[EAX]
+00412259  |. 8B40 F4        MOV EAX,DWORD PTR DS:[EAX-C]
+0041225C  \. C3             RETN
+
+
+Well, this is a get_length function. So when it return, EAX has now the length of my name. (6)
+
+Just after the call we have :
+
+00401447   . 05 CA000000    ADD EAX,0CA                                     ;  add 202 (dec) to eax witch is the length
+0040144C   . 35 0FD4D803    XOR EAX,3D8D40F                                 ;  XOR (^) with EAX
+00401451   . 8945 D0        MOV DWORD PTR SS:[EBP-30],EAX 		    ; MOV good serial at our address 0022FF48.
+
+So its not too difficult...  Add 0x0CA to my name and XOR it or ^ operator in C.
+
+We have now all to make a valid keygen.
+
+
+
+#include <stdlib.h>
+#include <string.h>
+
+
+
+void main(void) {
+	char username[256];
+	long code = 0;
+
+	printf("::: CrackMe#1 by Pride.exe keygen by skynetuniverse @ 2009 :::\n\n\n");
+
+	printf("User: ");
+
+	scanf("%s",&username);
+
+	code = (strlen(username) + 0x0CA) ^ 0x3d8d40f;
+
+	printf("\nSerial Number is : %d", code);
+
+	printf("\n\n");
+
+	system("pause");
+
+}
+
+
+I have done this KeyGen with LCC a free c/c++ compiler.  Dont expect to make a big project with this... Lcc is just fine for little project like this, if you want to make larger project use Visual C++ 6.0, or you can use Visual Studio 2008, if you want to have a window style.
+
+That's it for me, and this keygen.
+
+Happy keygenning!!
+
+::: skynetuniverse/2009 :::
